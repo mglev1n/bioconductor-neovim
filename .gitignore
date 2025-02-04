@@ -1,0 +1,9 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+bioconductor-neovim.Rproj
+.Rdata
+.httr-oauth
+.DS_Store
+.quarto
