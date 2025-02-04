@@ -26,9 +26,6 @@ RUN luarocks install lpeg \
 USER rstudio
 WORKDIR /home/rstudio
 
-# Install Python packages for Neovim
-RUN pip3 install --user pynvim
-
 # Create Neovim config directory and clone kickstarter
 RUN mkdir -p .config/nvim \
     && git clone https://github.com/jmbuhr/quarto-nvim-kickstarter.git .config/nvim
@@ -45,5 +42,4 @@ USER root
 # Verify installations
 RUN nvim --version \
     && luarocks --version \
-    && pip3 show pynvim \
     && npm --version
