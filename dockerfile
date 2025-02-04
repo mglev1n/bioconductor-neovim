@@ -9,7 +9,6 @@ RUN apt-get update && \
     git \
     npm \
     python3-pip \
-    && add-apt-repository -y ppa:neovim-ppa/unstable \
     && apt-get update && \
     apt-get install -y --no-install-recommends \
     neovim \
