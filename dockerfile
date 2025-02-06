@@ -8,6 +8,7 @@ USER root
 
 # Install system dependencies required for image.nvim and quarto
 RUN apt-get update && apt-get install -y \
+    libgfortran5 \
     imagemagick \
     libmagickwand-dev \
     liblua5.1-0-dev \
