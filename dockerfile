@@ -1,76 +1,87 @@
-ARG ARCH
-ARG BASE_IMAGE
+FROM bioconductor/bioconductor:3.17
 
-# hadolint ignore=DL3007
-FROM ${ARCH}allaman/nvim-full:latest
+ARG BRANCH=stable
 
-USER root
+# Install neovim build dependencies and other required packages
+RUN apt-get update \
+    && apt-get install --no-install-recommends -y \
+        build-essential \
+        ca-certificates \
+        cmake \
+        curl \
+        fd-find \
+        fzf \
+        g++ \
+        gettext \
+        git \
+        gnupg \
+        libmagickwand-dev \
+        liblua5.1-0-dev \
+        luajit \
+        make \
+        ninja-build \
+        nodejs \
+        npm \
+        python3-pip \
+        ripgrep \
+        sudo \
+        tar \
+        unzip \
+        wget \
+        zip \
+    && rm -rf /var/lib/apt/lists/* \
+    && ln -s "$(which fdfind)" /usr/bin/fd \
+    && ln -s "$(which python3)" /usr/bin/python
 
-# Install system dependencies and wget for mambaforge installation
-RUN apt-get update && apt-get install -y \
-    imagemagick \
-    libmagickwand-dev \
-    liblua5.1-0-dev \
-    luajit \
-    nodejs \
-    npm \
-    wget \
-    procps \
-    && rm -rf /var/lib/apt/lists/*
+# Build Neovim from source
+RUN git clone -b ${BRANCH} https://github.com/neovim/neovim /tmp/neovim \
+    && cd /tmp/neovim \
+    && make CMAKE_BUILD_TYPE=RelWithDebInfo \
+    && make install \
+    && rm -fr /tmp/neovim
 
-# Install Mambaforge
-RUN wget -O Miniforge3.sh "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-$(uname)-$(uname -m).sh" \
-    && bash Miniforge3.sh -b -p "/opt/conda" \
-    && rm Miniforge3.sh
+# Install Go
+RUN curl -sLo go.tar.gz "https://go.dev/dl/go1.21.0.linux-amd64.tar.gz" \
+    && tar -C /usr/local/bin -xzf go.tar.gz \
+    && rm go.tar.gz
 
-# Add mamba to PATH
-ENV PATH="/opt/conda/bin:$PATH"
+# Add user 'nvim' and allow passwordless sudo
+RUN adduser --disabled-password --gecos '' nvim \
+    && echo 'nvim ALL=(ALL:ALL) NOPASSWD:ALL' >> /etc/sudoers
 
-# Initialize mamba
-RUN mamba init bash
+# Set up environment variables
+ENV PATH=$PATH:/usr/local/bin/go/bin/
+ENV GOPATH=/home/nvim/.local/share/go
+ENV PATH=$PATH:$GOPATH/bin
 
-# Install R using mamba
-RUN mamba install -y -c conda-forge \
-    r-base=4.3.2 \
-    r-devtools \
-    r-essentials \
-    && R --version
-
-# Setup npm for non-root user and install tree-sitter-cli globally
-RUN mkdir -p /home/nvim/.npm-global \
-    && chown -R nvim:nvim /home/nvim/.npm-global \
-    && npm config set prefix '/home/nvim/.npm-global' \
-    && npm install -g tree-sitter-cli
-
-# Switch back to nvim user for remaining operations
+# Switch to nvim user for remaining operations
 USER nvim
+WORKDIR /home/nvim
 
-# Set up directory structure
+# Set up directory structure and configs
 RUN mkdir -p ~/.config/nvim \
-    && mkdir -p ~/.local/share/nvim/mason/packages
+    && mkdir -p ~/.local/share/nvim/mason/packages \
+    && echo "return {}" > ~/.nvim_config.lua
 
-# Clone quarto-nvim-kickstarter configuration
-RUN git clone https://github.com/jmbuhr/quarto-nvim-kickstarter.git /tmp/quarto-config \
-    && cp -r /tmp/quarto-config/* ~/.config/nvim/ \
-    && rm -rf /tmp/quarto-config
-
-# Create empty user config file
-RUN echo "return {}" > ~/.nvim_config.lua
-
-# Add mason tools and npm global dir to path
-RUN echo "export PATH=$PATH:~/.local/share/nvim/mason/bin:/usr/bin/npm" >> ~/.bashrc \
-    && echo "export PATH=$PATH:~/.local/share/nvim/mason/bin:/usr/bin/npm" >> ~/.profile \
-    && mkdir -p ~/.npm-global \
+# Set up npm for nvim user
+RUN mkdir -p ~/.npm-global \
     && npm config set prefix '~/.npm-global' \
     && echo "export PATH=~/.npm-global/bin:$PATH" >> ~/.bashrc \
     && echo "export PATH=~/.npm-global/bin:$PATH" >> ~/.profile
 
-WORKDIR /home/nvim/.config/nvim
+# Install tree-sitter-cli
+RUN npm install -g tree-sitter-cli
+
+# Clone and set up quarto-nvim-kickstarter
+RUN git clone https://github.com/jmbuhr/quarto-nvim-kickstarter.git /tmp/quarto-config \
+    && cp -r /tmp/quarto-config/* ~/.config/nvim/ \
+    && rm -rf /tmp/quarto-config
 
 # Install plugins and tools
-# Note: Increased sleep time to ensure proper installation of all plugins
 RUN nvim --headless "+Lazy! sync" +qa \
     && nvim --headless "+MasonInstall" +sleep 60 +qa
 
-# Set the entrypoint
+# Add mason tools dir to path
+RUN echo "export PATH=$PATH:~/.local/share/nvim/mason/bin" >> ~/.bashrc
+
 ENTRYPOINT ["/bin/bash", "-c", "nvim"]
