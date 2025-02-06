@@ -31,7 +31,8 @@ RUN apt-get update \
     && ln -s "$(which python3)" /usr/bin/python
 
 # Install Node.js 20
-RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+RUN apt-get remove -y libnode-dev \
+    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y nodejs \
     && npm install -g npm@latest
 
