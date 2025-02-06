@@ -2,7 +2,7 @@ FROM bioconductor/bioconductor:3.17
 
 ARG BRANCH=stable
 
-# Install neovim build dependencies and other required packages
+# Install system dependencies
 RUN apt-get update \
     && apt-get install --no-install-recommends -y \
         build-essential \
@@ -32,6 +32,11 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/* \
     && ln -s "$(which fdfind)" /usr/bin/fd \
     && ln -s "$(which python3)" /usr/bin/python
+
+# Install Rust and tree-sitter-cli
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y \
+    && . $HOME/.cargo/env \
+    && cargo install --locked tree-sitter-cli
 
 # Build Neovim from source
 RUN git clone -b ${BRANCH} https://github.com/neovim/neovim /tmp/neovim \
@@ -63,11 +68,13 @@ RUN mkdir -p ~/.config/nvim \
     && mkdir -p ~/.local/share/nvim/mason/packages \
     && echo "return {}" > ~/.nvim_config.lua
 
-# Setup npm for non-root user and install tree-sitter-cli globally
-RUN mkdir -p /home/nvim/.npm-global \
-    && chown -R nvim:nvim /home/nvim/.npm-global \
-    && npm config set prefix '/home/nvim/.npm-global' \
-    && npm install -g tree-sitter-cli
+# Set up npm for nvim user
+RUN mkdir -p ~/.npm-global \
+    && npm config set prefix '~/.npm-global' \
+    && echo "export PATH=~/.npm-global/bin:$PATH" >> ~/.bashrc \
+    && echo "export PATH=~/.npm-global/bin:$PATH" >> ~/.profile \
+    && echo "export PATH=$HOME/.cargo/bin:$PATH" >> ~/.bashrc \
+    && echo "export PATH=$HOME/.cargo/bin:$PATH" >> ~/.profile
 
 # Clone and set up quarto-nvim-kickstarter
 RUN git clone https://github.com/jmbuhr/quarto-nvim-kickstarter.git /tmp/quarto-config \
