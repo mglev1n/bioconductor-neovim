@@ -1,5 +1,4 @@
-name: Build and Publish Docker Image
-
+name: Build and Publish Container Images
 on:
   push:
     branches: ["main"]
@@ -10,6 +9,7 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
+  SINGULARITY_IMAGE: quarto-nvim-latest.sif
 
 jobs:
   build-and-push:
@@ -17,7 +17,6 @@ jobs:
     permissions:
       contents: read
       packages: write
-
     strategy:
       fail-fast: false
 
@@ -35,10 +34,55 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push
+      - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
           context: .
           push: ${{ github.event_name != 'pull_request' }}
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          # Enable cache for faster builds
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Install Singularity
+        if: github.event_name != 'pull_request'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget squashfs-tools cryptsetup
+          wget https://github.com/sylabs/singularity/releases/download/v3.11.4/singularity-ce_3.11.4-focal_amd64.deb
+          sudo dpkg -i singularity-ce_3.11.4-focal_amd64.deb
+
+      - name: Build Singularity image
+        if: github.event_name != 'pull_request'
+        run: |
+          # Pull the Docker image we just built
+          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          # Convert to Singularity
+          singularity build ${{ env.SINGULARITY_IMAGE }} docker://${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+
+      - name: Upload Singularity image as artifact
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v3
+        with:
+          name: singularity-image
+          path: ${{ env.SINGULARITY_IMAGE }}
+          retention-days: 5
+
+      - name: Create Release
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ github.run_number }}
+          name: Release ${{ github.run_number }}
+          draft: false
+          prerelease: false
+          files: ${{ env.SINGULARITY_IMAGE }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Singularity image to GHCR
+        if: github.event_name != 'pull_request'
+        run: |
+          # Convert SIF to tar
+          singularity push ${{ env.SINGULARITY_IMAGE }} oras://${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/sif:latest
