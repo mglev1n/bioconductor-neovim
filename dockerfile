@@ -12,8 +12,12 @@ RUN apt-get update && apt-get install -y \
     libmagickwand-dev \
     liblua5.1-0-dev \
     luajit \
-    tree-sitter-cli \
+    nodejs \
+    npm \
     && rm -rf /var/lib/apt/lists/*
+
+# Install tree-sitter-cli globally
+RUN npm install -g tree-sitter-cli
 
 # Switch back to nvim user for remaining operations
 USER nvim
