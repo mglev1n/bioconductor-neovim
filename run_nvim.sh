@@ -11,4 +11,4 @@ export SINGULARITY_BIND="/project/:/project/,/appl/:/appl/,/lsf/:/lsf/,/scratch/
 export SINGULARITYENV_APPEND_PATH=/project/voltron/rstudio/containers/quarto/quarto-1.6.40/bin:${PATH}
 export SINGULARITYENV_R_LIBS_USER=$HOME/R/rocker-rstudio/bioconductor-tidyverse_3.17
 
-singularity run /project/damrauer_shared/Users/mglevin/bioconductor-neovim/containers/bioconductor-neovim_latest.sif
+singularity run /project/damrauer_shared/Users/mglevin/bioconductor-neovim/containers/quarto-nvim-latest.sif "$@"

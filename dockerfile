@@ -2,7 +2,6 @@ FROM bioconductor/bioconductor:3.17
 
 ARG BRANCH=stable
 
-# Install system dependencies
 RUN apt-get update \
     && apt-get install --no-install-recommends -y \
         build-essential \
@@ -20,8 +19,6 @@ RUN apt-get update \
         luajit \
         make \
         ninja-build \
-        nodejs \
-        npm \
         python3-pip \
         ripgrep \
         sudo \
@@ -32,6 +29,11 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/* \
     && ln -s "$(which fdfind)" /usr/bin/fd \
     && ln -s "$(which python3)" /usr/bin/python
+
+# Install Node.js 20
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y nodejs \
+    && npm install -g npm@latest
 
 # Install Rust and tree-sitter-cli
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y \
