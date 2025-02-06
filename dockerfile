@@ -6,7 +6,7 @@ FROM ${ARCH}allaman/nvim-full:latest
 
 USER root
 
-# Install system dependencies required for image.nvim, quarto, and R
+# Install system dependencies and wget for mambaforge installation
 RUN apt-get update && apt-get install -y \
     imagemagick \
     libmagickwand-dev \
@@ -14,33 +14,26 @@ RUN apt-get update && apt-get install -y \
     luajit \
     nodejs \
     npm \
-    # R dependencies
-    dirmngr \
-    gnupg \
-    software-properties-common \
+    wget \
     && rm -rf /var/lib/apt/lists/*
 
-# Add R 4.3 repository
-RUN wget -qO- https://cloud.r-project.org/bin/linux/ubuntu/marutter_pubkey.asc | tee -a /etc/apt/trusted.gpg.d/cran_ubuntu_key.asc \
-    && add-apt-repository "deb https://cloud.r-project.org/bin/linux/ubuntu $(lsb_release -cs)-cran40/" \
-    && apt-get update
+# Install Mambaforge
+RUN wget -O Miniforge3.sh "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-$(uname)-$(uname -m).sh" \
+    && bash Miniforge3.sh -b -p "/opt/conda" \
+    && rm Miniforge3.sh
 
-# Install R 4.3.2 and common R packages
-RUN apt-get install -y \
-    r-base=4.3.2* \
-    r-base-dev=4.3.2* \
-    # Additional R system dependencies
-    # libxml2-dev \
-    # libssl-dev \
-    # libcurl4-openssl-dev \
-    # libfontconfig1-dev \
-    # libharfbuzz-dev \
-    # libfribidi-dev \
-    # libfreetype6-dev \
-    # libpng-dev \
-    # libtiff5-dev \
-    # libjpeg-dev \
-    && rm -rf /var/lib/apt/lists/*
+# Add mamba to PATH
+ENV PATH="/opt/conda/bin:$PATH"
+
+# Initialize mamba
+RUN mamba init bash
+
+# Install R using mamba
+RUN mamba install -y -c conda-forge \
+    r-base=4.3.2 \
+    r-devtools \
+    r-essentials \
+    && R --version
 
 # Setup npm for non-root user and install tree-sitter-cli globally
 RUN mkdir -p /home/nvim/.npm-global \
