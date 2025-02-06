@@ -58,20 +58,19 @@ jobs:
       - name: Build Singularity image
         if: github.event_name != 'pull_request'
         run: |
-          # Clean up disk space
-          docker system prune -af  # Remove unused Docker data
+          # Clean disk space
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
+          docker system prune -af
           
-          # Check space again
-          df -h
+          # Create tmpfs mount
+          sudo mkdir -p /scratch
+          sudo mount -t tmpfs -o size=10g tmpfs /scratch
           
-          # Pull and build
-          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-          SINGULARITY_TMPDIR=/tmp 
-          SINGULARITY_CACHEDIR=/tmp 
-          singularity build ${{ env.SINGULARITY_IMAGE }} docker://${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          # Build with tmpfs
+          SINGULARITY_TMPDIR=/scratch SINGULARITY_CACHEDIR=/scratch \
+          singularity build --no-cleanup ${{ env.SINGULARITY_IMAGE }} \
+          docker://${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
           
-          # Final space check
-          df -h
 
       - name: Upload Singularity image
         if: github.event_name != 'pull_request'
