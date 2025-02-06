@@ -41,7 +41,6 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-          # Enable cache for faster builds
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -56,14 +55,12 @@ jobs:
       - name: Build Singularity image
         if: github.event_name != 'pull_request'
         run: |
-          # Pull the Docker image we just built
           docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-          # Convert to Singularity
           singularity build ${{ env.SINGULARITY_IMAGE }} docker://${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
 
-      - name: Upload Singularity image as artifact
+      - name: Upload Singularity image
         if: github.event_name != 'pull_request'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: singularity-image
           path: ${{ env.SINGULARITY_IMAGE }}
@@ -84,5 +81,4 @@ jobs:
       - name: Upload Singularity image to GHCR
         if: github.event_name != 'pull_request'
         run: |
-          # Convert SIF to tar
           singularity push ${{ env.SINGULARITY_IMAGE }} oras://${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/sif:latest
