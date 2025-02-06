@@ -63,12 +63,10 @@ RUN mkdir -p ~/.config/nvim \
     && mkdir -p ~/.local/share/nvim/mason/packages \
     && echo "return {}" > ~/.nvim_config.lua
 
-# Set up npm for nvim user and install tree-sitter-cli
-RUN mkdir -p ~/.npm-global \
-    && npm config set prefix '~/.npm-global' \
-    && echo "export PATH=~/.npm-global/bin:$PATH" >> ~/.bashrc \
-    && echo "export PATH=~/.npm-global/bin:$PATH" >> ~/.profile \
-    && . ~/.profile \
+# Setup npm for non-root user and install tree-sitter-cli globally
+RUN mkdir -p /home/nvim/.npm-global \
+    && chown -R nvim:nvim /home/nvim/.npm-global \
+    && npm config set prefix '/home/nvim/.npm-global' \
     && npm install -g tree-sitter-cli
 
 # Clone and set up quarto-nvim-kickstarter
