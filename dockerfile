@@ -15,6 +15,7 @@ RUN apt-get update && apt-get install -y \
     nodejs \
     npm \
     wget \
+    procps \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Mambaforge
