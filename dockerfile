@@ -27,8 +27,8 @@ RUN wget -qO- https://cloud.r-project.org/bin/linux/ubuntu/marutter_pubkey.asc |
 
 # Install R 4.3.2 and common R packages
 RUN apt-get install -y \
-    r-base=4.3.2-* \
-    r-base-dev=4.3.2-* \
+    r-base=4.3.2* \
+    r-base-dev=4.3.2* \
     # Additional R system dependencies
     libxml2-dev \
     libssl-dev \
