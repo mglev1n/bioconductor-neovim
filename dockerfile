@@ -27,12 +27,19 @@ RUN wget -qO- https://cloud.r-project.org/bin/linux/ubuntu/marutter_pubkey.asc |
 
 # Install R 4.3.2 and common R packages
 RUN apt-get install -y \
-    r-base=4.3* \
-    r-base-dev=4.3* \
+    r-base=4.3.2* \
+    r-base-dev=4.3.2* \
     # Additional R system dependencies
-    libxml2-dev \
-    libssl-dev \
-    libcurl4-openssl-dev \
+    # libxml2-dev \
+    # libssl-dev \
+    # libcurl4-openssl-dev \
+    # libfontconfig1-dev \
+    # libharfbuzz-dev \
+    # libfribidi-dev \
+    # libfreetype6-dev \
+    # libpng-dev \
+    # libtiff5-dev \
+    # libjpeg-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Setup npm for non-root user and install tree-sitter-cli globally
