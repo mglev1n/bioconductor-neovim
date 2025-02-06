@@ -95,5 +95,12 @@ jobs:
 
       - name: Upload Singularity image to GHCR
         if: github.event_name != 'pull_request'
+        env:
+          SINGULARITY_DOCKER_USERNAME: ${{ github.actor }}
+          SINGULARITY_DOCKER_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          # First authenticate with GHCR
+          echo ${{ secrets.GITHUB_TOKEN }} | singularity remote login -u ${{ github.actor }} --password-stdin oras://ghcr.io
+          
+          # Then push the image
           singularity push ${{ env.SINGULARITY_IMAGE }} oras://${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/sif:latest
