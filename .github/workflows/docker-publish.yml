@@ -52,11 +52,26 @@ jobs:
           wget https://github.com/sylabs/singularity/releases/download/v3.11.4/singularity-ce_3.11.4-focal_amd64.deb
           sudo dpkg -i singularity-ce_3.11.4-focal_amd64.deb
 
+      - name: Check disk space before
+        run: df -h
+        
       - name: Build Singularity image
         if: github.event_name != 'pull_request'
         run: |
+          # Clean up disk space
+          docker system prune -af  # Remove unused Docker data
+          
+          # Check space again
+          df -h
+          
+          # Pull and build
           docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          SINGULARITY_TMPDIR=/tmp 
+          SINGULARITY_CACHEDIR=/tmp 
           singularity build ${{ env.SINGULARITY_IMAGE }} docker://${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          
+          # Final space check
+          df -h
 
       - name: Upload Singularity image
         if: github.event_name != 'pull_request'
