@@ -16,8 +16,11 @@ RUN apt-get update && apt-get install -y \
     npm \
     && rm -rf /var/lib/apt/lists/*
 
-# Install tree-sitter-cli globally
-RUN npm install -g tree-sitter-cli
+# Setup npm for non-root user and install tree-sitter-cli globally
+RUN mkdir -p /home/nvim/.npm-global \
+    && chown -R nvim:nvim /home/nvim/.npm-global \
+    && npm config set prefix '/home/nvim/.npm-global' \
+    && npm install -g tree-sitter-cli
 
 # Switch back to nvim user for remaining operations
 USER nvim
@@ -34,8 +37,13 @@ RUN git clone https://github.com/jmbuhr/quarto-nvim-kickstarter.git /tmp/quarto-
 # Create empty user config file
 RUN echo "return {}" > ~/.nvim_config.lua
 
-# Add mason tools dir to path
-RUN echo "PATH=$PATH:~/.local/share/nvim/mason/bin" >> ~/.bashrc
+# Add mason tools and npm global dir to path
+RUN echo "export PATH=$PATH:~/.local/share/nvim/mason/bin:/usr/bin/npm" >> ~/.bashrc \
+    && echo "export PATH=$PATH:~/.local/share/nvim/mason/bin:/usr/bin/npm" >> ~/.profile \
+    && mkdir -p ~/.npm-global \
+    && npm config set prefix '~/.npm-global' \
+    && echo "export PATH=~/.npm-global/bin:$PATH" >> ~/.bashrc \
+    && echo "export PATH=~/.npm-global/bin:$PATH" >> ~/.profile
 
 WORKDIR /home/nvim/.config/nvim
 
