@@ -70,7 +70,7 @@ RUN mkdir -p ~/.npm-global \
     && echo "export PATH=~/.npm-global/bin:$PATH" >> ~/.profile
 
 # Install tree-sitter-cli
-RUN npm install -g tree-sitter-cli
+RUN npm install tree-sitter-cli
 
 # Clone and set up quarto-nvim-kickstarter
 RUN git clone https://github.com/jmbuhr/quarto-nvim-kickstarter.git /tmp/quarto-config \
